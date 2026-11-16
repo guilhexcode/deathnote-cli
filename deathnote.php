@@ -1,5 +1,6 @@
 <?php
 const ARQUIVO = __DIR__ . "/caderno.json";
+const LIMITE_CAUSA = 40; // segundos pra escrever a causa
 
 function carregarCaderno(): array {
     if (!file_exists(ARQUIVO)) {
@@ -16,7 +17,20 @@ function salvarCaderno(array $caderno): void {
     );
 }
 
+function perguntar(string $texto): string {
+    echo $texto;
+    return trim(fgets(STDIN));
+}
+
+function mostrarRegras(): void {
+    echo "\n\033[1mRegras do caderno:\033[0m\n";
+    echo "1. Só funciona se você tiver o rosto da pessoa em mente.\n";
+    echo "2. Você tem " . LIMITE_CAUSA . " segundos pra escrever a causa da morte.\n";
+    echo "3. Passou do tempo: a causa vira ataque cardíaco.\n";
+}
+
 echo "\033[1;31m=== DEATH NOTE ===\033[0m\n";
+mostrarRegras();
 
 $caderno = carregarCaderno();
 $novos = [];
@@ -29,8 +43,7 @@ if (count($caderno) > 0) {
 }
 
 while (true) {
-    echo "\nNome (ou 'sair' pra fechar o caderno): ";
-    $nome = trim(fgets(STDIN));
+    $nome = perguntar("\nNome (ou 'sair' pra fechar o caderno): ");
 
     if (strtolower($nome) === "sair") {
         break;
@@ -40,8 +53,23 @@ while (true) {
         continue;
     }
 
-    echo "Causa da morte (Enter = ataque cardíaco): ";
-    $causa = trim(fgets(STDIN)) ?: "ataque cardíaco";
+    $rosto = strtolower(perguntar("Você está com o rosto dessa pessoa em mente? (s/n): "));
+    if ($rosto !== "s") {
+        echo "Sem o rosto em mente, o nome não tem efeito. Nada foi escrito.\n";
+        continue;
+    }
+
+    $inicio = time();
+    $causa = perguntar("Causa da morte (Enter = ataque cardíaco): ");
+    $demorou = time() - $inicio;
+
+    if ($demorou > LIMITE_CAUSA) {
+        echo "\033[33mPassaram-se {$demorou}s. Tarde demais: ataque cardíaco.\033[0m\n";
+        $causa = "";
+    }
+    if ($causa === "") {
+        $causa = "ataque cardíaco";
+    }
 
     $entrada = ["nome" => $nome, "causa" => $causa];
     $caderno[] = $entrada;
