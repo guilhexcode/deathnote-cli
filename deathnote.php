@@ -1,7 +1,32 @@
 <?php
+const ARQUIVO = __DIR__ . "/caderno.json";
+
+function carregarCaderno(): array {
+    if (!file_exists(ARQUIVO)) {
+        return [];
+    }
+    $dados = json_decode(file_get_contents(ARQUIVO), true);
+    return is_array($dados) ? $dados : [];
+}
+
+function salvarCaderno(array $caderno): void {
+    file_put_contents(
+        ARQUIVO,
+        json_encode($caderno, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
+    );
+}
+
 echo "\033[1;31m=== DEATH NOTE ===\033[0m\n";
 
-$caderno = [];
+$caderno = carregarCaderno();
+$novos = [];
+
+if (count($caderno) > 0) {
+    echo "\nO caderno já tem " . count($caderno) . " nome(s):\n";
+    foreach ($caderno as $i => $entrada) {
+        echo ($i + 1) . ". {$entrada['nome']} - {$entrada['causa']}\n";
+    }
+}
 
 while (true) {
     echo "\nNome (ou 'sair' pra fechar o caderno): ";
@@ -18,18 +43,17 @@ while (true) {
     echo "Causa da morte (Enter = ataque cardíaco): ";
     $causa = trim(fgets(STDIN)) ?: "ataque cardíaco";
 
-    $caderno[] = ["nome" => $nome, "causa" => $causa];
+    $entrada = ["nome" => $nome, "causa" => $causa];
+    $caderno[] = $entrada;
+    $novos[] = $entrada;
+    salvarCaderno($caderno);
+
     echo "\033[31m$nome\033[0m foi escrito no caderno.\n";
 }
 
-if (count($caderno) === 0) {
-    echo "Nenhum nome foi escrito. O caderno está em branco.\n";
+if (count($novos) === 0) {
+    echo "Nenhum nome novo. Caderno fechado.\n";
     exit;
-}
-
-echo "\n\033[1mNomes no caderno:\033[0m\n";
-foreach ($caderno as $i => $entrada) {
-    echo ($i + 1) . ". {$entrada['nome']} - {$entrada['causa']}\n";
 }
 
 for ($i = 40; $i >= 0; $i--) {
@@ -38,6 +62,6 @@ for ($i = 40; $i >= 0; $i--) {
 }
 
 echo "\n\n";
-foreach ($caderno as $entrada) {
+foreach ($novos as $entrada) {
     echo "{$entrada['nome']} morreu de {$entrada['causa']}.\n";
 }
